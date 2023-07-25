@@ -3,10 +3,10 @@ name: Noetic
 on:
   push:
 
-    branches: [ 1.13.2 ]
+    branches: [ 1.13.2-deb ]
 
   pull_request:
-    branches: [ 1.13.2 ]
+    branches: [ 1.13.2-deb ]
 
   # schedule:
   #   - cron:  '0 0 * * *' # at the end of every day

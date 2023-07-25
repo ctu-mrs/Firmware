@@ -482,7 +482,7 @@ add_custom_target(size
 	)
 
 # install python requirements using configured python
-add_custom_target(install_python_requirements
+add_custom_target(install_python_requirements ALL
 	COMMAND ${PYTHON_EXECUTABLE} -m pip install --requirement ${PX4_SOURCE_DIR}/Tools/setup/requirements.txt
 	DEPENDS ${PX4_SOURCE_DIR}/Tools/setup/requirements.txt
 	USES_TERMINAL
