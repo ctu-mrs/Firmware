@@ -24,11 +24,6 @@ else
   ARCH="arm64"
 fi
 
-## | ----------- fixe the "dubious" ownership error ----------- |
-
-git config --global --add safe.directory $PACKAGE_PATH
-echo "stek pes"
-
 ## | ---------------- check if we are on a tag ---------------- |
 
 cd $PACKAGE_PATH
