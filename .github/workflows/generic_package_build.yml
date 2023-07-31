@@ -3,10 +3,10 @@ name: generic_package_build
 on:
 
   push:
-    branches: [ master ]
+    branches: [ 1.13.2-deb ]
 
   pull_request:
-    branches: [ master ]
+    branches: [ 1.13.2-deb ]
 
   workflow_dispatch:
 
