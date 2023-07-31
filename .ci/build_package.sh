@@ -24,6 +24,10 @@ else
   ARCH="arm64"
 fi
 
+## | ----------- fixe the "dubious" ownership error ----------- |
+
+git config --global --add safe.directory $PACKAGE_PATH
+
 ## | ---------------- check if we are on a tag ---------------- |
 
 cd $PACKAGE_PATH
