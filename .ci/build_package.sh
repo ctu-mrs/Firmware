@@ -16,6 +16,10 @@ PACKAGE_PATH=$MY_PATH/..
 rm -rf /tmp/workspace || echo ""
 rm -rf /tmp/px4 || echo ""
 
+## | ----------------------- Install ROS ---------------------- |
+
+$GITHUB_WORKSPACE/.ci_scripts/package_build/install_ros.sh
+
 ## | ----------------------- add MRS PPA ---------------------- |
 
 $GITHUB_WORKSPACE/.ci_scripts/package_build/add_ctu_mrs_unstable_ppa.sh
