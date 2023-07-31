@@ -13,6 +13,27 @@ ARTIFACTS_FOLDER=$1
 
 PACKAGE_PATH=$MY_PATH/..
 
+## | ------------- detect current CPU architectur ------------- |
+
+CPU_ARCH=$(uname -m)
+if [[ "$CPU_ARCH" == "x86_64" ]]; then
+  echo "$0: detected amd64 architecture"
+  ARCH="amd64"
+else
+  echo "$0: amd64 architecture not detected, assuming arm64"
+  ARCH="arm64"
+fi
+
+## | ---------------- check if we are on a tag ---------------- |
+
+cd $PACKAGE_PATH
+GIT_TAG=$(git describe --exact-match --tags HEAD || echo "")
+
+if [[ "$GIT_TAG" == "" ]]; then
+  echo "$0: git tag not recognized! PX4 requires the current commit to be tagged with, e.g., v1.12.1-dev tag."
+  exit 1
+fi
+
 ## | ----------------------- Install ROS ---------------------- |
 
 $PACKAGE_PATH/.ci_scripts/package_build/install_ros.sh
@@ -20,10 +41,6 @@ $PACKAGE_PATH/.ci_scripts/package_build/install_ros.sh
 ## | ----------------------- add MRS PPA ---------------------- |
 
 $PACKAGE_PATH/.ci_scripts/package_build/add_ctu_mrs_unstable_ppa.sh
-
-## | ------------------- checkout submodules ------------------ |
-
-git submodule update --init --recursive
 
 ## | ------------------ install dependencies ------------------ |
 
@@ -67,15 +84,6 @@ cp -r $WORKSPACE_PATH/install/share/px4 $TMP_PATH/package/opt/ros/noetic/share
 # extract package version
 VERSION=$(cat $PACKAGE_PATH/package.xml | grep '<version>' | sed -e 's/\s*<\/*version>//g')
 echo "$0: Detected version $VERSION"
-
-CPU_ARCH=$(uname -m)
-if [[ "$CPU_ARCH" == "x86_64" ]]; then
-  echo "$0: detected amd64 architecture"
-  ARCH="amd64"
-else
-  echo "$0: architecture not detected, assuming arm64"
-  ARCH="arm64"
-fi
 
 echo "Package: ros-noetic-px4
 Version: $VERSION
