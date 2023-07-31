@@ -32,8 +32,6 @@ rosdep install -y -v --rosdistro=noetic --from-paths ./
 sudo apt-get -y install ros-noetic-catkin python3-catkin-tools
 
 # PX4-specific dependency
-# sudo pip3 install -U kconfiglib
-# python3 -m pip install -r $PACKAGE_PATH/Tools/setup/requirements.txt
 $PACKAGE_PATH/Tools/setup/ubuntu.sh --no-nuttx --no-sim-tool
 
 ## | ---------------- prepare catkin workspace ---------------- |
@@ -50,12 +48,12 @@ catkin config --profile release --cmake-args -DCMAKE_BUILD_TYPE=Release
 catkin profile set release
 catkin config --install
 
-ln -s $PACKAGE_PATH $WORKSPACE_PATH/src/px4
+ln -sf $PACKAGE_PATH $WORKSPACE_PATH/src/px4
 
 ## | ------------------------ build px4 ----------------------- |
 
 cd $WORKSPACE_PATH
-catkin build --verbose -j1
+catkin build
 
 ## | -------- extract build artefacts into deb package -------- |
 
