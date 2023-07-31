@@ -31,7 +31,7 @@ rosdep install -y -v --rosdistro=noetic --from-paths ./
 sudo apt-get -y install ros-noetic-catkin python3-catkin-tools
 
 # PX4-specific dependency
-$GITHUB_WORKSPACE/Tools/setup/debian.sh --no-nuttx --no-sim-tool
+$GITHUB_WORKSPACE/Tools/setup/ubuntu.sh --no-nuttx --no-sim-tool
 
 ## | ---------------- prepare catkin workspace ---------------- |
 
