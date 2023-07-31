@@ -9,6 +9,8 @@ trap 'echo "$0: \"${last_command}\" command failed with exit code $?"' ERR
 MY_PATH=`dirname "$0"`
 MY_PATH=`( cd "$MY_PATH" && pwd )`
 
+ARTIFACTS_FOLDER=$1
+
 PACKAGE_PATH=$MY_PATH/..
 
 rm -rf /tmp/workspace || echo ""
@@ -61,17 +63,26 @@ cp -r $WORKSPACE_PATH/install/share/px4 $TMP_PATH/package/opt/ros/noetic/share
 VERSION=$(cat $PACKAGE_PATH/package.xml | grep '<version>' | sed -e 's/\s*<\/*version>//g')
 echo "$0: Detected version $VERSION"
 
+CPU_ARCH=$(uname -m)
+if [[ "$CPU_ARCH" == "x86_64" ]]; then
+  echo "$0: detected amd64 architecture"
+  ARCH="amd64"
+else
+  echo "$0: architecture not detected, assuming arm64"
+  ARCH="arm64"
+fi
+
 echo "Package: ros-noetic-px4
 Version: $VERSION
-Architecture: amd64
+Architecture: $ARCH
 Maintainer: Tomas Baca <tomas.baca@fel.cvut.cz>
 Description: PX4" > $TMP_PATH/package/DEBIAN/control
 
 cd $TMP_PATH
 
+sudo apt-get -y install dpkg-dev
+
 dpkg-deb --build --root-owner-group package
 dpkg-name package.deb
 
-mkdir -p /tmp/debs_to_push
-
-mv $TMP_PATH/*.deb /tmp/debs_to_push/
+mv $TMP_PATH/*.deb $ARTIFACTS_FOLDER
