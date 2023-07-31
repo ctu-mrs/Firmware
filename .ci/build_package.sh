@@ -24,6 +24,10 @@ $GITHUB_WORKSPACE/.ci_scripts/package_build/install_ros.sh
 
 $GITHUB_WORKSPACE/.ci_scripts/package_build/add_ctu_mrs_unstable_ppa.sh
 
+## | ------------------- checkout submodules ------------------ |
+
+git submodule update --init --recursive
+
 ## | ------------------ install dependencies ------------------ |
 
 rosdep install -y -v --rosdistro=noetic --from-paths ./
@@ -31,7 +35,8 @@ rosdep install -y -v --rosdistro=noetic --from-paths ./
 sudo apt-get -y install ros-noetic-catkin python3-catkin-tools
 
 # PX4-specific dependency
-$GITHUB_WORKSPACE/Tools/setup/ubuntu.sh --no-nuttx --no-sim-tool
+sudo pip3 install -u kconfiglib
+# $GITHUB_WORKSPACE/Tools/setup/ubuntu.sh --no-nuttx --no-sim-tool
 
 ## | ---------------- prepare catkin workspace ---------------- |
 
