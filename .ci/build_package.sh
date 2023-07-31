@@ -13,16 +13,13 @@ ARTIFACTS_FOLDER=$1
 
 PACKAGE_PATH=$MY_PATH/..
 
-rm -rf /tmp/workspace || echo ""
-rm -rf /tmp/px4 || echo ""
-
 ## | ----------------------- Install ROS ---------------------- |
 
-$GITHUB_WORKSPACE/.ci_scripts/package_build/install_ros.sh
+$PACKAGE_PATH/.ci_scripts/package_build/install_ros.sh
 
 ## | ----------------------- add MRS PPA ---------------------- |
 
-$GITHUB_WORKSPACE/.ci_scripts/package_build/add_ctu_mrs_unstable_ppa.sh
+$PACKAGE_PATH/.ci_scripts/package_build/add_ctu_mrs_unstable_ppa.sh
 
 ## | ------------------- checkout submodules ------------------ |
 
@@ -36,8 +33,8 @@ sudo apt-get -y install ros-noetic-catkin python3-catkin-tools
 
 # PX4-specific dependency
 # sudo pip3 install -U kconfiglib
-python3 -m pip install -r $GITHUB_WORKSPACE/Tools/setup/requirements.txt
-# $GITHUB_WORKSPACE/Tools/setup/ubuntu.sh --no-nuttx --no-sim-tool
+# python3 -m pip install -r $PACKAGE_PATH/Tools/setup/requirements.txt
+$PACKAGE_PATH/Tools/setup/ubuntu.sh --no-nuttx --no-sim-tool
 
 ## | ---------------- prepare catkin workspace ---------------- |
 
@@ -49,7 +46,7 @@ cd $WORKSPACE_PATH/
 source /opt/ros/noetic/setup.bash
 
 catkin init
-catkin config --profile release --cmake-args -DCMAKE_BUILD_TYPE=Release -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_CXX_FLAGS='-std=c++17'
+catkin config --profile release --cmake-args -DCMAKE_BUILD_TYPE=Release
 catkin profile set release
 catkin config --install
 
