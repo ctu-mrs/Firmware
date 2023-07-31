@@ -37,8 +37,12 @@ header = """
 
 # PX4
 git_describe_cmd = 'git describe --exclude ext/* --always --tags --dirty'
-git_tag = subprocess.check_output(git_describe_cmd.split(),
-                                  stderr=subprocess.STDOUT).decode('utf-8').strip()
+
+try:
+    git_tag = subprocess.check_output(git_describe_cmd.split(),
+                                      stderr=subprocess.STDOUT).decode('utf-8').strip()
+except:
+    git_tag = ''
 
 try:
     # get the tag if we're on a tagged commit
@@ -83,13 +87,18 @@ if validate:
         print("")
         sys.exit(1)
 
-git_version = subprocess.check_output('git rev-parse --verify HEAD'.split(),
-                                      stderr=subprocess.STDOUT).decode('utf-8').strip()
+try:
+    git_version = subprocess.check_output('git rev-parse --verify HEAD'.split(),
+                                          stderr=subprocess.STDOUT).decode('utf-8').strip()
+except:
+    git_version = ''
+
 try:
     git_branch_name = subprocess.check_output('git symbolic-ref -q --short HEAD'.split(),
                                           stderr=subprocess.STDOUT).decode('utf-8').strip()
 except:
     git_branch_name = ''
+
 git_version_short = git_version[0:16]
 
 # OEM version
@@ -121,11 +130,19 @@ header += f"""
 
 # ECL
 if (os.path.exists('src/lib/ecl/.git')):
-    ecl_git_tag = subprocess.check_output('git describe --always --tags --dirty'.split(),
-                                  cwd='src/lib/ecl', stderr=subprocess.STDOUT).decode('utf-8')
 
-    ecl_git_version = subprocess.check_output('git rev-parse --verify HEAD'.split(),
-                                      cwd='src/lib/ecl', stderr=subprocess.STDOUT).decode('utf-8').strip()
+    try:
+        ecl_git_tag = subprocess.check_output('git describe --always --tags --dirty'.split(),
+                                      cwd='src/lib/ecl', stderr=subprocess.STDOUT).decode('utf-8')
+    except:
+        ecl_git_tag = ''
+
+    try:
+        ecl_git_version = subprocess.check_output('git rev-parse --verify HEAD'.split(),
+                                          cwd='src/lib/ecl', stderr=subprocess.STDOUT).decode('utf-8').strip()
+    except:
+        ecl_git_version = ''
+
     ecl_git_version_short = ecl_git_version[0:16]
 
     header += f"""
@@ -136,8 +153,13 @@ if (os.path.exists('src/lib/ecl/.git')):
 
 # Mavlink
 if (os.path.exists('src/modules/mavlink/mavlink/.git')):
-    mavlink_git_version = subprocess.check_output('git rev-parse --verify HEAD'.split(),
-                                      cwd='src/modules/mavlink/mavlink', stderr=subprocess.STDOUT).decode('utf-8').strip()
+
+    try:
+        mavlink_git_version = subprocess.check_output('git rev-parse --verify HEAD'.split(),
+                                          cwd='src/modules/mavlink/mavlink', stderr=subprocess.STDOUT).decode('utf-8').strip()
+    except:
+        mavlink_git_version = ''
+
     mavlink_git_version_short = mavlink_git_version[0:16]
 
     header += f"""
@@ -145,15 +167,24 @@ if (os.path.exists('src/modules/mavlink/mavlink/.git')):
 #define MAVLINK_LIB_GIT_VERSION_BINARY 0x{mavlink_git_version_short}
 """
 
-
 # NuttX
 if (os.path.exists('platforms/nuttx/NuttX/nuttx/.git')):
-    nuttx_git_tags = subprocess.check_output('git -c versionsort.suffix=- tag --sort=v:refname'.split(),
-                                  cwd='platforms/nuttx/NuttX/nuttx', stderr=subprocess.STDOUT).decode('utf-8').strip()
+
+    try:
+        nuttx_git_tags = subprocess.check_output('git -c versionsort.suffix=- tag --sort=v:refname'.split(),
+                                      cwd='platforms/nuttx/NuttX/nuttx', stderr=subprocess.STDOUT).decode('utf-8').strip()
+    except:
+        nuttx_git_tags = ''
+
     nuttx_git_tag = re.findall(r'nuttx-[0-9]+\.[0-9]+\.[0-9]+', nuttx_git_tags)[-1].replace("nuttx-", "v")
     nuttx_git_tag = re.sub('-.*', '.0', nuttx_git_tag)
-    nuttx_git_version = subprocess.check_output('git rev-parse --verify HEAD'.split(),
-                                      cwd='platforms/nuttx/NuttX/nuttx', stderr=subprocess.STDOUT).decode('utf-8').strip()
+
+    try:
+        nuttx_git_version = subprocess.check_output('git rev-parse --verify HEAD'.split(),
+                                          cwd='platforms/nuttx/NuttX/nuttx', stderr=subprocess.STDOUT).decode('utf-8').strip()
+    except:
+        nuttx_git_version = ''
+
     nuttx_git_version_short = nuttx_git_version[0:16]
 
     header += f"""
