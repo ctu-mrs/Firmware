@@ -50,12 +50,12 @@ catkin config --profile release --cmake-args -DCMAKE_BUILD_TYPE=Release
 catkin profile set release
 catkin config --install
 
-cd src
-ln -s $PACKAGE_PATH px4
+ln -s $PACKAGE_PATH $WORKSPACE_PATH/src/px4
 
 ## | ------------------------ build px4 ----------------------- |
 
-catkin build
+cd $WORKSPACE_PATH
+catkin build --verbose -j1
 
 ## | -------- extract build artefacts into deb package -------- |
 
