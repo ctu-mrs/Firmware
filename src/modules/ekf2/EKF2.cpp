@@ -1033,7 +1033,8 @@ void EKF2::PublishOdometry(const hrt_abstime &timestamp, const imuSample &imu)
 	odom.vz = velocity(2);
 
 	// Vehicle odometry quaternion
-	_ekf.getQuaternion().copyTo(odom.q);
+	const matrix::Quatf q = _ekf.getQuaternion();
+	q.copyTo(odom.q);
 
 	// Vehicle odometry angular rates
 	const Vector3f gyro_bias{_ekf.getGyroBias()};
@@ -1042,36 +1043,85 @@ void EKF2::PublishOdometry(const hrt_abstime &timestamp, const imuSample &imu)
 	odom.pitchspeed = rates(1) - gyro_bias(1);
 	odom.yawspeed = rates(2) - gyro_bias(2);
 
+	// Get covariances to vehicle odometry
+	float covariances[24];
+	_ekf.covariances_diagonal().copyTo(covariances);
+
+	// Get position and velocity covariances
+	float pos_cov[6];
+	float vel_cov[6];
+	const size_t EKF_POS_COV_SZ = 3;
+	_ekf.position_covariances().upper_right_triangle().copyTo(pos_cov);
+	_ekf.velocity_covariances().upper_right_triangle().copyTo(vel_cov);
+
+	// Get orientation covariances
+	const size_t QUAT_COV_SZ = 4;
+	matrix::Matrix<float, QUAT_COV_SZ, QUAT_COV_SZ> C_quat = _ekf.orientation_covariances();
+
 	// get the covariance matrix size
 	static constexpr size_t POS_URT_SIZE = sizeof(odom.pose_covariance) / sizeof(odom.pose_covariance[0]);
 	static constexpr size_t VEL_URT_SIZE = sizeof(odom.velocity_covariance) / sizeof(odom.velocity_covariance[0]);
 
-	// Get covariances to vehicle odometry
-	float covariances[24];
-	_ekf.covariances_diagonal().copyTo(covariances);
+	// row size of original covariance matrix in row major form derived from POS_URT_SIZE=ODOM_POS_COV_SZ*(ODOM_POS_COV_SZ+1)/2=6
+	const size_t ODOM_POS_COV_SZ = (-1 + sqrtf(1+8*POS_URT_SIZE))/2;
+	const size_t ODOM_VEL_COV_SZ = (-1 + sqrtf(1+8*VEL_URT_SIZE))/2;
 
 	// initially set pose covariances to 0
 	for (size_t i = 0; i < POS_URT_SIZE; i++) {
 		odom.pose_covariance[i] = 0.0;
 	}
 
-	// set the position variances
-	odom.pose_covariance[odom.COVARIANCE_MATRIX_X_VARIANCE] = covariances[7];
-	odom.pose_covariance[odom.COVARIANCE_MATRIX_Y_VARIANCE] = covariances[8];
-	odom.pose_covariance[odom.COVARIANCE_MATRIX_Z_VARIANCE] = covariances[9];
-
-	// TODO: implement propagation from quaternion covariance to Euler angle covariance
-	// by employing the covariance law
-
 	// initially set velocity covariances to 0
 	for (size_t i = 0; i < VEL_URT_SIZE; i++) {
 		odom.velocity_covariance[i] = 0.0;
 	}
 
-	// set the linear velocity variances
-	odom.velocity_covariance[odom.COVARIANCE_MATRIX_VX_VARIANCE] = covariances[4];
-	odom.velocity_covariance[odom.COVARIANCE_MATRIX_VY_VARIANCE] = covariances[5];
-	odom.velocity_covariance[odom.COVARIANCE_MATRIX_VZ_VARIANCE] = covariances[6];
+	// fill jacobian G according to section 4.6 in
+	// Development of a real-time attitude system using a quaternion parameterization and non-dedicated GPS receivers, John B. Schleppe, 1996
+	// and employ the covariance law to propagate from quaternion covariance to Euler angle covariance
+	matrix::Matrix<float, 4, 3> G;
+	matrix::SquareMatrix<float, 3> C_euler;
+
+	float x = q(1);
+	float y = q(2);
+	float z = q(3);
+	float w = q(0);
+
+	float t0 = pow(z+y, 2) + pow(w+x, 2);
+	float t1 = pow(z-y, 2) + pow(w-x, 2);
+	float t2 = sqrtf(1-4*pow(y*z+x*w, 2));
+
+	G(0,0) = -(z+y)/t0 - (z-y)/t1; // Psi w.r.t w
+	G(0,1) = -(z+y)/t0 + (z-y)/t1; // Psi w.r.t x
+	G(0,2) = (w+x)/t0 - (w-x)/t1;  // Psi w.r.t y
+	G(0,3) = (w+x)/t0 + (w-x)/t1;  // Psi w.r.t z
+
+	G(1,0) = 2*x/t2; // Theta w.r.t w
+	G(1,1) = 2*w/t2; // Theta w.r.t x
+	G(1,2) = 2*z/t2; // Theta w.r.t y
+	G(1,3) = 2*y/t2; // Theta w.r.t z
+
+	G(2,0) = G(0,1); // Phi w.r.t w
+	G(2,1) = G(0,0); // Phi w.r.t x
+	G(2,2) = G(0,3); // Phi w.r.t y
+	G(2,3) = G(0,2); // Phi w.r.t z
+
+	C_euler = G.T().operator*(C_quat).operator*(G);
+
+	// get the orientation covariances in upper triangular row major form
+	float ori_cov[6];
+	C_euler.upper_right_triangle().copyTo(ori_cov);
+
+	// set the covariances
+	size_t idx = 0;
+	for (size_t n = EKF_POS_COV_SZ; n > 0; n--) {
+		for (size_t i = 0; i < n; i++) {
+			odom.pose_covariance[idx + (EKF_POS_COV_SZ-n)*(ODOM_POS_COV_SZ-EKF_POS_COV_SZ)] = pos_cov[idx];
+			odom.velocity_covariance[idx + (EKF_POS_COV_SZ-n)*(ODOM_VEL_COV_SZ-EKF_POS_COV_SZ)] = vel_cov[idx];
+			odom.pose_covariance[idx + odom.COVARIANCE_MATRIX_ROLL_VARIANCE] = ori_cov[idx];
+			idx++;
+		}
+	}
 
 	odom.reset_counter = _ekf.get_quat_reset_count()
 			     + _ekf.get_velNE_reset_count() + _ekf.get_velD_reset_count()
