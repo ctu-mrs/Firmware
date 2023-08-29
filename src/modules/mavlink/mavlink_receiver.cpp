@@ -274,6 +274,10 @@ MavlinkReceiver::handle_message(mavlink_message_t *msg)
 		handle_message_statustext(msg);
 		break;
 
+	case MAVLINK_MSG_ID_ESC_STATUS:
+		handle_message_esc_status(msg);
+		break;
+
 #if !defined(CONSTRAINED_FLASH)
 
 	case MAVLINK_MSG_ID_NAMED_VALUE_FLOAT:
@@ -899,6 +903,27 @@ MavlinkReceiver::handle_message_distance_sensor(mavlink_message_t *msg)
 	ds.signal_quality = dist_sensor.signal_quality == 0 ? -1 : 100 * (dist_sensor.signal_quality - 1) / 99;
 
 	_distance_sensor_pub.publish(ds);
+}
+
+MavlinkReceiver::handle_message_esc_status(mavlink_message_t *msg)
+{
+	mavlink_esc_status_t esc_status;
+	mavlink_msg_esc_status_decode(msg, &esc_status);
+
+	esc_status_s es{};
+
+	es.timestamp = esc_status.time_usec;
+  es.esc_count = 4;
+
+  for (size_t i = 0; i < 4; i++) {
+    esc_report_s esr{};
+    esr.esc_rpm = esc_status.rpm[i];
+    esr.esc_voltage = esc_status.voltage[i];
+    esr.esc_current = esc_status.current[i];
+    es.esc[i] = esr; 
+  }
+
+  _esc_status_pub.publish(es);
 }
 
 void
