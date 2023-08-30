@@ -1043,13 +1043,6 @@ void EKF2::PublishOdometry(const hrt_abstime &timestamp, const imuSample &imu)
 	odom.pitchspeed = rates(1) - gyro_bias(1);
 	odom.yawspeed = rates(2) - gyro_bias(2);
 
-	// Get position and velocity covariances
-	float pos_cov[6];
-	float vel_cov[6];
-	const size_t EKF_POS_COV_SZ = 3;
-	_ekf.position_covariances().upper_right_triangle().copyTo(pos_cov);
-	_ekf.velocity_covariances().upper_right_triangle().copyTo(vel_cov);
-
 	// Get orientation covariances
 	const size_t QUAT_COV_SZ = 4;
 	matrix::Matrix<float, QUAT_COV_SZ, QUAT_COV_SZ> C_quat = _ekf.orientation_covariances();
@@ -1057,10 +1050,6 @@ void EKF2::PublishOdometry(const hrt_abstime &timestamp, const imuSample &imu)
 	// get the covariance matrix size
 	static constexpr size_t POS_URT_SIZE = sizeof(odom.pose_covariance) / sizeof(odom.pose_covariance[0]);
 	static constexpr size_t VEL_URT_SIZE = sizeof(odom.velocity_covariance) / sizeof(odom.velocity_covariance[0]);
-
-	// row size of original covariance matrix in row major form derived from POS_URT_SIZE=ODOM_POS_COV_SZ*(ODOM_POS_COV_SZ+1)/2=6
-	const size_t ODOM_POS_COV_SZ = (-1 + sqrtf(1+8*POS_URT_SIZE))/2;
-	const size_t ODOM_VEL_COV_SZ = (-1 + sqrtf(1+8*VEL_URT_SIZE))/2;
 
 	// initially set pose covariances to 0
 	for (size_t i = 0; i < POS_URT_SIZE; i++) {
@@ -1076,16 +1065,15 @@ void EKF2::PublishOdometry(const hrt_abstime &timestamp, const imuSample &imu)
 	// Development of a real-time attitude system using a quaternion parameterization and non-dedicated GPS receivers, John B. Schleppe, 1996
 	// and employ the covariance law to propagate from quaternion covariance to Euler angle covariance
 	matrix::Matrix<float, 3, 4> G;
-	matrix::SquareMatrix<float, 3> C_euler;
 
-	float w = q(0);
-	float x = q(1);
-	float y = q(2);
-	float z = q(3);
+	const float w = q(0);
+	const float x = q(1);
+	const float y = q(2);
+	const float z = q(3);
 
-	float t0 = pow(z+y, 2) + pow(w+x, 2);
-	float t1 = pow(z-y, 2) + pow(w-x, 2);
-	float t2 = sqrtf(1-4*pow(y*z+x*w, 2));
+	const float t0 = pow(z+y, 2) + pow(w+x, 2);
+	const float t1 = pow(z-y, 2) + pow(w-x, 2);
+	const float t2 = sqrtf(1-4*pow(y*z+x*w, 2));
 
   // Psi = yaw
   // Theta = pitch
@@ -1106,22 +1094,43 @@ void EKF2::PublishOdometry(const hrt_abstime &timestamp, const imuSample &imu)
 	G(0,2) = G(2,3); // Phi w.r.t y
 	G(0,3) = G(2,2); // Phi w.r.t z
 
-	C_euler = G * C_quat * G.T();
+	const matrix::SquareMatrix<float, 3> C_euler = G * C_quat * G.T();
+  const auto& C_position = _ekf.position_covariances();
+  const auto& C_velocity = _ekf.velocity_covariances();
 
-	// get the orientation covariances in upper triangular row major form
-	float ori_cov[6];
-	C_euler.upper_right_triangle().copyTo(ori_cov);
+  // copy the position covariance
+  const int pos_cov_dim = 3;
+  int out_idx = 0;
+  for (int row = 0; row < pos_cov_dim; row++)
+  {
+    for (int col = row; col < pos_cov_dim; col++)
+    {
+			odom.pose_covariance[out_idx] = C_position(row, col);
+      out_idx++;
+    }
+  }
 
-	// set the covariances
-	size_t idx = 0;
-	for (size_t n = EKF_POS_COV_SZ; n > 0; n--) {
-		for (size_t i = 0; i < n; i++) {
-			odom.pose_covariance[idx + (EKF_POS_COV_SZ-n)*(ODOM_POS_COV_SZ-EKF_POS_COV_SZ)] = pos_cov[idx];
-			odom.velocity_covariance[idx + (EKF_POS_COV_SZ-n)*(ODOM_VEL_COV_SZ-EKF_POS_COV_SZ)] = vel_cov[idx];
-			odom.pose_covariance[idx + odom.COVARIANCE_MATRIX_ROLL_VARIANCE] = ori_cov[idx];
-			idx++;
-		}
-	}
+  // copy the orientation covariance
+  const int ori_cov_dim = 3;
+  for (int row = 0; row < ori_cov_dim; row++)
+  {
+    for (int col = 0; col < ori_cov_dim; col++)
+    {
+			odom.pose_covariance[out_idx] = C_euler(row, col);
+      out_idx++;
+    }
+  }
+
+  const int vel_cov_dim = 3;
+  out_idx = 0;
+  for (int row = 0; row < vel_cov_dim; row++)
+  {
+    for (int col = 0; col < vel_cov_dim; col++)
+    {
+			odom.velocity_covariance[out_idx] = C_velocity(row, col);
+      out_idx++;
+    }
+  }
 
 	odom.reset_counter = _ekf.get_quat_reset_count()
 			     + _ekf.get_velNE_reset_count() + _ekf.get_velD_reset_count()
