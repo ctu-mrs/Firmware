@@ -1043,10 +1043,6 @@ void EKF2::PublishOdometry(const hrt_abstime &timestamp, const imuSample &imu)
 	odom.pitchspeed = rates(1) - gyro_bias(1);
 	odom.yawspeed = rates(2) - gyro_bias(2);
 
-	// Get covariances to vehicle odometry
-	float covariances[24];
-	_ekf.covariances_diagonal().copyTo(covariances);
-
 	// Get position and velocity covariances
 	float pos_cov[6];
 	float vel_cov[6];
@@ -1079,34 +1075,38 @@ void EKF2::PublishOdometry(const hrt_abstime &timestamp, const imuSample &imu)
 	// fill jacobian G according to section 4.6 in
 	// Development of a real-time attitude system using a quaternion parameterization and non-dedicated GPS receivers, John B. Schleppe, 1996
 	// and employ the covariance law to propagate from quaternion covariance to Euler angle covariance
-	matrix::Matrix<float, 4, 3> G;
+	matrix::Matrix<float, 3, 4> G;
 	matrix::SquareMatrix<float, 3> C_euler;
 
+	float w = q(0);
 	float x = q(1);
 	float y = q(2);
 	float z = q(3);
-	float w = q(0);
 
 	float t0 = pow(z+y, 2) + pow(w+x, 2);
 	float t1 = pow(z-y, 2) + pow(w-x, 2);
 	float t2 = sqrtf(1-4*pow(y*z+x*w, 2));
 
-	G(0,0) = -(z+y)/t0 - (z-y)/t1; // Psi w.r.t w
-	G(0,1) = -(z+y)/t0 + (z-y)/t1; // Psi w.r.t x
-	G(0,2) = (w+x)/t0 - (w-x)/t1;  // Psi w.r.t y
-	G(0,3) = (w+x)/t0 + (w-x)/t1;  // Psi w.r.t z
+  // Psi = yaw
+  // Theta = pitch
+  // Phi = roll
 
 	G(1,0) = 2*x/t2; // Theta w.r.t w
 	G(1,1) = 2*w/t2; // Theta w.r.t x
 	G(1,2) = 2*z/t2; // Theta w.r.t y
 	G(1,3) = 2*y/t2; // Theta w.r.t z
 
-	G(2,0) = G(0,1); // Phi w.r.t w
-	G(2,1) = G(0,0); // Phi w.r.t x
-	G(2,2) = G(0,3); // Phi w.r.t y
-	G(2,3) = G(0,2); // Phi w.r.t z
+	G(2,0) = -(z+y)/t0 - (z-y)/t1; // Psi w.r.t w
+	G(2,1) = -(z+y)/t0 + (z-y)/t1; // Psi w.r.t x
+	G(2,2) = (w+x)/t0 - (w-x)/t1;  // Psi w.r.t y
+	G(2,3) = (w+x)/t0 + (w-x)/t1;  // Psi w.r.t z
 
-	C_euler = G.T().operator*(C_quat).operator*(G);
+	G(0,0) = G(2,1); // Phi w.r.t w
+	G(0,1) = G(2,0); // Phi w.r.t x
+	G(0,2) = G(2,3); // Phi w.r.t y
+	G(0,3) = G(2,2); // Phi w.r.t z
+
+	C_euler = G * C_quat * G.T();
 
 	// get the orientation covariances in upper triangular row major form
 	float ori_cov[6];
