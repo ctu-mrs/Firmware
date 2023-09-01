@@ -905,6 +905,7 @@ MavlinkReceiver::handle_message_distance_sensor(mavlink_message_t *msg)
 	_distance_sensor_pub.publish(ds);
 }
 
+void
 MavlinkReceiver::handle_message_esc_status(mavlink_message_t *msg)
 {
 	mavlink_esc_status_t esc_status;
