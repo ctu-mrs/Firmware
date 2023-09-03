@@ -74,7 +74,7 @@ private:
 				bat_msg.type = MAV_BATTERY_TYPE_LIPO;
 				bat_msg.current_consumed = (battery_status.connected) ? battery_status.discharged_mah : -1;
 				bat_msg.energy_consumed = -1;
-				bat_msg.current_battery = (battery_status.connected) ? battery_status.current_filtered_a * 100 : -1;
+				bat_msg.current_battery = (battery_status.connected) ? battery_status.current_a * 100 : -1;
 				bat_msg.battery_remaining = (battery_status.connected) ? roundf(battery_status.remaining * 100.f) : -1;
 				// MAVLink extension: 0 is unsupported, in uORB it's NAN
 				bat_msg.time_remaining = (battery_status.connected && (PX4_ISFINITE(battery_status.time_remaining_s))) ?
@@ -151,7 +151,7 @@ private:
 				if (battery_status.connected) {
 					// We don't know the cell count or we don't know the indpendent cell voltages so we report the total voltage in the first cell
 					if (battery_status.cell_count == 0 || battery_status.voltage_cell_v[0] < 0.0001f) {
-						cell_voltages[0] = battery_status.voltage_filtered_v * 1000.f;
+						cell_voltages[0] = battery_status.voltage_v * 1000.f;
 
 					} else {
 						static constexpr int uorb_cell_slots =
