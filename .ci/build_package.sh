@@ -48,6 +48,9 @@ curl https://ctu-mrs.github.io/ppa-${VARIANT}/add_ppa.sh | bash
 
 ## | ------------------ install dependencies ------------------ |
 
+# without this, the lxml package won't be installed from the internal python dependencies
+sudo apt-get -y install libxslt1-dev
+
 rosdep install -y -v --rosdistro=noetic --from-paths ./
 
 sudo apt-get -y install ros-noetic-catkin python3-catkin-tools
