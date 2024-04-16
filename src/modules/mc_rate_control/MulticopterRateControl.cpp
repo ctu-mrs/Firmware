@@ -221,6 +221,13 @@ MulticopterRateControl::Run()
 			_rate_control.getRateControlStatus(rate_ctrl_status);
 			rate_ctrl_status.timestamp = hrt_absolute_time();
 			_controller_status_pub.publish(rate_ctrl_status);
+            debug_vect_s debug_vect_msg{};
+            debug_vect_msg.timestamp=hrt_absolute_time();
+            debug_vect_msg.x=rate_ctrl_status.rollspeed_integ;
+            debug_vect_msg.y=rate_ctrl_status.pitchspeed_integ;
+            debug_vect_msg.z=rate_ctrl_status.yawspeed_integ;
+            strncpy(debug_vect_msg.name, "forRobert", 10);
+            _debug_vect_pub.publish(debug_vect_msg);
 
 			// publish thrust and torque setpoints
 			vehicle_thrust_setpoint_s vehicle_thrust_setpoint{};
