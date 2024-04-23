@@ -261,6 +261,7 @@ void BatteryChecks::rtlEstimateCheck(const Context &context, Report &reporter, f
 			&& context.isArmed()
 			&& PX4_ISFINITE(worst_battery_time_s)
 			&& rtl_time_estimate.safe_time_estimate >= worst_battery_time_s;
+	reporter.failsafeFlags().battery_low_remaining_time = 0;
 
 	if (reporter.failsafeFlags().battery_low_remaining_time) {
 		/* EVENT
