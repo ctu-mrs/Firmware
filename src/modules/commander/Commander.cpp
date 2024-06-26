@@ -2197,7 +2197,7 @@ Commander::run()
 
 				if (airmode == 2 && man_arm_gesture == 1) {
 					airmode = 1; // change to roll/pitch airmode
-					param_set(param_airmode, &airmode);
+					// param_set(param_airmode, &airmode);
 					mavlink_log_critical(&_mavlink_log_pub, "Yaw Airmode requires disabling the stick arm gesture\t")
 					/* EVENT
 					 * @description <param>MC_AIRMODE</param> is now set to roll/pitch airmode.
