@@ -309,6 +309,7 @@ void LoggedTopics::add_high_rate_topics()
 	add_topic("actuator_motors");
 	add_topic("vehicle_thrust_setpoint");
 	add_topic("vehicle_torque_setpoint");
+    add_topic("esc_status");
 }
 
 void LoggedTopics::add_debug_topics()
