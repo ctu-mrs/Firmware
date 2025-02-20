@@ -33,7 +33,7 @@
 
 add_library(geo
 	geo.cpp
-	geo.h
+	geo.h gps_conversions.h
 )
 add_dependencies(geo prebuild_targets)
 target_compile_options(geo PRIVATE ${MAX_CUSTOM_OPT_LEVEL})

@@ -65,52 +65,58 @@ void MapProjection::initReference(double lat_0, double lon_0, uint64_t timestamp
 	_ref_lon = math::radians(lon_0);
 	_ref_sin_lat = sin(_ref_lat);
 	_ref_cos_lat = cos(_ref_lat);
+
+    float x,y;
+    mrs_lib::LLtoUTM(lat_0, lon_0, x, y, (char*)_zone);
+
 	_ref_init_done = true;
 }
 
 void MapProjection::project(double lat, double lon, float &x, float &y) const
 {
-	const double lat_rad = math::radians(lat);
-	const double lon_rad = math::radians(lon);
-
-	const double sin_lat = sin(lat_rad);
-	const double cos_lat = cos(lat_rad);
-
-	const double cos_d_lon = cos(lon_rad - _ref_lon);
-
-	const double arg = math::constrain(_ref_sin_lat * sin_lat + _ref_cos_lat * cos_lat * cos_d_lon, -1.0,  1.0);
-	const double c = acos(arg);
-
-	double k = 1.0;
-
-	if (fabs(c) > 0) {
-		k = (c / sin(c));
-	}
-
-	x = static_cast<float>(k * (_ref_cos_lat * sin_lat - _ref_sin_lat * cos_lat * cos_d_lon) * CONSTANTS_RADIUS_OF_EARTH);
-	y = static_cast<float>(k * cos_lat * sin(lon_rad - _ref_lon) * CONSTANTS_RADIUS_OF_EARTH);
+  mrs_lib::LLtoUTM(lat, lon, y, x, (char*)_zone);
+//	const double lat_rad = math::radians(lat);
+//	const double lon_rad = math::radians(lon);
+//
+//	const double sin_lat = sin(lat_rad);
+//	const double cos_lat = cos(lat_rad);
+//
+//	const double cos_d_lon = cos(lon_rad - _ref_lon);
+//
+//	const double arg = math::constrain(_ref_sin_lat * sin_lat + _ref_cos_lat * cos_lat * cos_d_lon, -1.0,  1.0);
+//	const double c = acos(arg);
+//
+//	double k = 1.0;
+//
+//	if (fabs(c) > 0) {
+//		k = (c / sin(c));
+//	}
+//
+//	x = static_cast<float>(k * (_ref_cos_lat * sin_lat - _ref_sin_lat * cos_lat * cos_d_lon) * CONSTANTS_RADIUS_OF_EARTH);
+//	y = static_cast<float>(k * cos_lat * sin(lon_rad - _ref_lon) * CONSTANTS_RADIUS_OF_EARTH);
 }
 
 void MapProjection::reproject(float x, float y, double &lat, double &lon) const
 {
-	const double x_rad = (double)x / CONSTANTS_RADIUS_OF_EARTH;
-	const double y_rad = (double)y / CONSTANTS_RADIUS_OF_EARTH;
-	const double c = sqrt(x_rad * x_rad + y_rad * y_rad);
-
-	if (fabs(c) > 0) {
-		const double sin_c = sin(c);
-		const double cos_c = cos(c);
-
-		const double lat_rad = asin(cos_c * _ref_sin_lat + (x_rad * sin_c * _ref_cos_lat) / c);
-		const double lon_rad = (_ref_lon + atan2(y_rad * sin_c, c * _ref_cos_lat * cos_c - x_rad * _ref_sin_lat * sin_c));
-
-		lat = math::degrees(lat_rad);
-		lon = math::degrees(lon_rad);
-
-	} else {
-		lat = math::degrees(_ref_lat);
-		lon = math::degrees(_ref_lon);
-	}
+  mrs_lib::UTMtoLL(y, x, (char*)_zone, lat, lon);
+//	const double x_rad = (double)x / CONSTANTS_RADIUS_OF_EARTH;
+//	const double y_rad = (double)y / CONSTANTS_RADIUS_OF_EARTH;
+//	const double c = sqrt(x_rad * x_rad + y_rad * y_rad);
+//
+//	if (fabs(c) > 0) {
+//		const double sin_c = sin(c);
+//		const double cos_c = cos(c);
+//
+//		const double lat_rad = asin(cos_c * _ref_sin_lat + (x_rad * sin_c * _ref_cos_lat) / c);
+//		const double lon_rad = (_ref_lon + atan2(y_rad * sin_c, c * _ref_cos_lat * cos_c - x_rad * _ref_sin_lat * sin_c));
+//
+//		lat = math::degrees(lat_rad);
+//		lon = math::degrees(lon_rad);
+//
+//	} else {
+//		lat = math::degrees(_ref_lat);
+//		lon = math::degrees(_ref_lon);
+//	}
 }
 
 float get_distance_to_next_waypoint(double lat_now, double lon_now, double lat_next, double lon_next)

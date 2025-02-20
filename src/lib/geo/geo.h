@@ -51,6 +51,8 @@
 #include <lib/mathlib/mathlib.h>
 #include <lib/matrix/matrix/math.hpp>
 
+#include "gps_conversions.h"
+
 static constexpr float CONSTANTS_ONE_G = 9.80665f;						// m/s^2
 
 static constexpr float CONSTANTS_STD_PRESSURE_PA = 101325.0f;					// pascals (Pa)
@@ -167,6 +169,7 @@ private:
 	double _ref_lon{0.0};
 	double _ref_sin_lat{0.0};
 	double _ref_cos_lat{0.0};
+  char* _zone[4];
 	bool _ref_init_done{false};
 
 public:
