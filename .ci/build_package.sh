@@ -11,13 +11,14 @@ MY_PATH=`( cd "$MY_PATH" && pwd )`
 
 VARIANT=$1
 ARTIFACTS_FOLDER=$2
+BASE_IMAGE=$3
 
 PACKAGE_PATH=/tmp/package_copy
 mkdir -p $PACKAGE_PATH
 
 cp -r $MY_PATH/.. $PACKAGE_PATH/
 
-## | ------------- detect current CPU architectur ------------- |
+## | ------------ detect current CPU architecture ------------- |
 
 CPU_ARCH=$(uname -m)
 if [[ "$CPU_ARCH" == "x86_64" ]]; then
@@ -37,14 +38,6 @@ if [[ "$GIT_TAG" == "" ]]; then
   echo "$0: git tag not recognized! PX4 requires the current commit to be tagged with, e.g., v1.12.1-dev tag."
   exit 1
 fi
-
-## | ----------------------- Install ROS ---------------------- |
-
-$PACKAGE_PATH/.ci_scripts/package_build/add_ros_ppa.sh
-
-## | ----------------------- add MRS PPA ---------------------- |
-
-curl https://ctu-mrs.github.io/ppa-${VARIANT}/add_ppa.sh | bash
 
 ## | ------------------ install dependencies ------------------ |
 
